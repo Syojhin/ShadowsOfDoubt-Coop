@@ -9,15 +9,27 @@ namespace ShadowsOfDoubtCoop.Patches
     {
         public static bool Prefix(bool showPauseText, bool delayOverride, bool openDesktopMode)
         {
-            bool isCoop = CoopNetworkManager.Instance != null && CoopNetworkManager.Instance.IsConnected;
-            Plugin.Log.LogInfo($"[Pause] Intercepted: PauseGame(showText={showPauseText}, desktop={openDesktopMode}) -> Suppress: {isCoop}");
-
-            if (isCoop)
-            {
-                // In co-op, prevent gameplay pause simulation halt
-                return false;
-            }
+            Plugin.Log.LogInfo($"[Pause] Intercepted: PauseGame(showText={showPauseText}, desktop={openDesktopMode}) -> Allowing native execution");
+            // Allow native PauseGame to run so clipboard/case board and pause menus function and unlock cursor
             return true;
+        }
+
+        public static void Postfix(bool showPauseText, bool delayOverride, bool openDesktopMode)
+        {
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+
+            try
+            {
+                if (VirtualCursorController.Instance != null && !VirtualCursorController.Instance.isActive)
+                {
+                    VirtualCursorController.Instance.TryActivateVirtualCursor(VirtualCursorController.StartingMousePosition.centreScreen, null);
+                }
+            }
+            catch (Exception ex)
+            {
+                Plugin.Log.LogWarning($"[Pause] VirtualCursor activation: {ex.Message}");
+            }
         }
     }
 
@@ -105,6 +117,45 @@ namespace ShadowsOfDoubtCoop.Patches
             if (isConnected && !string.IsNullOrEmpty(evId))
             {
                 CoopNetworkManager.Instance!.SendCasePin(caseId, evId, 0f, 0f, false);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.TriggerPlayerKO))]
+    public static class PlayerKOPatch
+    {
+        public static void Postfix(Vector3 KODirection, float RollMP, bool forceDirtyDeath)
+        {
+            if (CoopNetworkManager.Instance != null && CoopNetworkManager.Instance.IsConnected)
+            {
+                Plugin.Log.LogInfo("[Combat] Local player KO triggered! Broadcasting downed state to partner...");
+                CoopNetworkManager.Instance.SendPlayerDamageOrKO(100f, true);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.TriggerPlayerRecovery))]
+    public static class PlayerRecoveryPatch
+    {
+        public static void Postfix()
+        {
+            if (CoopNetworkManager.Instance != null && CoopNetworkManager.Instance.IsConnected)
+            {
+                Plugin.Log.LogInfo("[Combat] Local player recovered! Broadcasting alive state to partner...");
+                CoopNetworkManager.Instance.SendPlayerDamageOrKO(0f, false);
+            }
+        }
+    }
+
+    [HarmonyPatch(typeof(Player), nameof(Player.RecieveDamage))]
+    public static class PlayerDamagePatch
+    {
+        public static void Postfix(float amount)
+        {
+            if (CoopNetworkManager.Instance != null && CoopNetworkManager.Instance.IsConnected && amount > 0.5f)
+            {
+                Plugin.Log.LogInfo($"[Combat] Local player took {amount:F1} damage! Broadcasting to partner...");
+                CoopNetworkManager.Instance.SendPlayerDamageOrKO(amount, false);
             }
         }
     }

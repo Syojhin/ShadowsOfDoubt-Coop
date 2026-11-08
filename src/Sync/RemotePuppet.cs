@@ -12,8 +12,33 @@ namespace ShadowsOfDoubtCoop.Sync
         private Vector3 _targetPosition;
         private Quaternion _targetRotation;
         private bool _isSpawned = false;
+        private bool _isDowned = false;
 
         public bool IsSpawned => _isSpawned;
+        public bool IsDowned => _isDowned;
+
+        public void SetDowned(bool downed)
+        {
+            _isDowned = downed;
+            if (_flashlight != null)
+            {
+                if (_isDowned)
+                {
+                    _flashlight.color = new Color(1.0f, 0.25f, 0.15f); // Emergency red/amber for downed partner
+                    _flashlight.intensity = 1.8f;
+                }
+                else
+                {
+                    _flashlight.color = new Color(0.95f, 0.90f, 0.80f); // Normal warm incandescent beam
+                    _flashlight.intensity = 2.5f;
+                }
+            }
+
+            if (_puppetTransform != null)
+            {
+                _puppetTransform.localScale = _isDowned ? new Vector3(1.2f, 0.35f, 1.2f) : new Vector3(0.85f, 1.8f, 0.85f);
+            }
+        }
 
         public void Spawn(Vector3 initialPos, Quaternion initialRot)
         {

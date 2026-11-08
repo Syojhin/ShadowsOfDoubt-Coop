@@ -12,7 +12,8 @@ namespace ShadowsOfDoubtCoop.Net
         DoorState = 5,
         InteractableAction = 6,
         CaseBoardOp = 7,
-        CrimeEvent = 8
+        CrimeEvent = 8,
+        PlayerCombatState = 9
     }
 
     public static class NetworkConfig

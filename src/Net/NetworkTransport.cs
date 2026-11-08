@@ -24,6 +24,7 @@ namespace ShadowsOfDoubtCoop.Net
         public Action<int, bool, bool>? OnDoorStateReceived { get; set; }
         public Action<float>? OnTimeSyncReceived { get; set; }
         public Action<int, string, float, float, bool>? OnCasePinReceived { get; set; }
+        public Action<float, bool>? OnPlayerCombatStateReceived { get; set; }
         public Action<string>? OnSaveFileReceived { get; set; }
         public Action<string>? OnStatusChanged { get; set; }
         public Action<string>? OnTransferProgress { get; set; }
@@ -196,6 +197,17 @@ namespace ShadowsOfDoubtCoop.Net
             _connectedPeer.Send(_writer, DeliveryMethod.ReliableOrdered);
         }
 
+        public void SendPlayerCombatState(float damageAmount, bool isKO)
+        {
+            if (!IsConnected || _connectedPeer == null) return;
+
+            _writer.Reset();
+            _writer.Put((byte)PacketType.PlayerCombatState);
+            _writer.Put(damageAmount);
+            _writer.Put(isKO);
+            _connectedPeer.Send(_writer, DeliveryMethod.ReliableOrdered);
+        }
+
         public void TriggerHostSaveSync(Action<float> onProgress)
         {
             if (!IsHost || _connectedPeer == null)
@@ -318,6 +330,15 @@ namespace ShadowsOfDoubtCoop.Net
                         if (assembledPath != null)
                         {
                             OnSaveFileReceived?.Invoke(assembledPath);
+                        }
+                        break;
+
+                    case PacketType.PlayerCombatState:
+                        if (reader.AvailableBytes >= 5)
+                        {
+                            float dmg = reader.GetFloat();
+                            bool isKO = reader.GetBool();
+                            OnPlayerCombatStateReceived?.Invoke(dmg, isKO);
                         }
                         break;
                 }

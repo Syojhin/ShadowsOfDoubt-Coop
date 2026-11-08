@@ -53,6 +53,7 @@ namespace ShadowsOfDoubtCoop
             _transport.OnDoorStateReceived = ApplyRemoteDoor;
             _transport.OnTimeSyncReceived = ApplyRemoteTimeSync;
             _transport.OnCasePinReceived = ApplyRemoteCasePin;
+            _transport.OnPlayerCombatStateReceived = OnRemotePlayerCombat;
             _transport.OnSaveFileReceived = OnSaveFileReceived;
             _transport.OnStatusChanged = text => _statusText = text;
             _transport.OnTransferProgress = text => _lastTransferStatus = text;
@@ -90,6 +91,13 @@ namespace ShadowsOfDoubtCoop
                     Plugin.Log.LogWarning($"[Input] Input.GetKeyDown unavailable ({ex.Message}). Switching to Event.current fallback.");
                     _inputFallbackMode = true;
                 }
+            }
+
+            // Unfreeze hardware mouse cursor if F9 Co-op HUD is active or if in pause menu
+            if (_showUi || (MainMenuController.Instance != null && MainMenuController.Instance.mainMenuActive))
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
             }
 
             // Poll network events on main thread
@@ -153,6 +161,11 @@ namespace ShadowsOfDoubtCoop
             _transport.SendCasePin(caseId, evId, posX, posY, isPinned);
         }
 
+        public void SendPlayerDamageOrKO(float amount, bool isKO)
+        {
+            _transport.SendPlayerCombatState(amount, isKO);
+        }
+
         private void BroadcastLocalPlayerTransform()
         {
             Vector3 pos;
@@ -188,6 +201,30 @@ namespace ShadowsOfDoubtCoop
             _remoteRot = rot;
             _puppetIsActive = true;
             _puppet.UpdateTarget(_remotePos, _remoteRot);
+        }
+
+        private void OnRemotePlayerCombat(float dmg, bool isKO)
+        {
+            if (isKO)
+            {
+                _puppet.SetDowned(true);
+                _statusText = "[!] PARTNER DOWNED / UNCONSCIOUS!";
+                Plugin.Log.LogWarning($"[Combat] Remote partner was knocked out at {_remotePos}!");
+            }
+            else
+            {
+                if (dmg > 0.5f)
+                {
+                    _lastTransferStatus = $"[ALERT] Partner took {dmg:F0} damage!";
+                    Plugin.Log.LogInfo($"[Combat] Remote partner took {dmg:F1} damage.");
+                }
+                else
+                {
+                    _puppet.SetDowned(false);
+                    _statusText = "Partner recovered";
+                    Plugin.Log.LogInfo("[Combat] Remote partner recovered.");
+                }
+            }
         }
 
         private void ApplyRemoteDoor(int wallId, bool isOpen, bool isLocked)
