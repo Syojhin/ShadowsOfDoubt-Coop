@@ -1,0 +1,26 @@
+# Build outputs
+bin/
+obj/
+release/
+staging/
+out/
+target/
+
+# Visual Studio / Rider / VSCode caches
+.vs/
+.idea/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# System & OS
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+
+# Log files
+*.log
