@@ -13,6 +13,25 @@
 
 ---
 
+## 2026-11-08 Public GitHub Deployment & Release v1.0.0
+
+**Changed:**
+1. Created public repository: `https://github.com/Syojhin/ShadowsOfDoubt-Coop`.
+2. Initialized Git tracking with strict `.gitignore` (source code, analysis tools, docs, and setup scripts tracked; binary output folders excluded).
+3. Pushed `main` branch to GitHub.
+4. Published GitHub Release `v1.0.0` attaching `Shadows_of_Doubt_Coop_v42.04_Portable.zip` (93.58 MB, SHA256: `B27A2FD037D0240FF9FE898496786AE2C42919E7BC634B313187C43F3EA0414C`).
+
+**Why:**
+Provide public source code hosting and a 1-click download point for David and his friends without requiring manual file transfers or GitHub accounts.
+
+**Tested how:**
+Verified repository visibility via `gh repo view Syojhin/ShadowsOfDoubt-Coop` and release status via `gh release view v1.0.0`.
+
+**Result:**
+Repository and Release v1.0.0 live on GitHub.
+
+---
+
 ## 2026-11-08 Release Enhancement: Bilingual (EN/DE) Setup Guide & 1-Click Firewall Helper
 
 **Changed:**
